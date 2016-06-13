@@ -30,6 +30,10 @@
 #define NULL_HANDLE     (HANDLE)0
 #endif
 
+#ifndef NULL_POINTER
+#define NULL_POINTER  (void*)0
+#endif
+
 #ifndef DWORD
 #define DWORD unsigned long
 #endif

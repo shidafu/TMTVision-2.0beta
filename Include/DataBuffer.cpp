@@ -3,30 +3,65 @@
 using namespace std;
 using namespace boost;
 
-template <typename T1, typename T2>
-DataBuffer<T1, T2>::DataBuffer()
+template <typename T>
+DataBuffer<T>::DataBuffer()
 {
 }
 
-template <typename T1, typename T2>
-DataBuffer<T1, T2>::~DataBuffer()
+template <typename T>
+DataBuffer<T>::~DataBuffer()
 {
 }
 
-template<typename T1, typename T2>
-void DataBuffer<T1, T2>::Unitial()
+template <typename T>
+bool DataBuffer<T>::Initial(char* setting, long settingLen)
 {
-	if (p_CircularBuffer!=0)
+	bool rtVal = INode::Initial(setting, settingLen);
+	try
 	{
-		p_CircularBuffer->clear();
-		delete p_CircularBuffer;
-		p_CircularBuffer = 0;
+		if (p_CircularBuffer != 0)
+		{
+			p_CircularBuffer->clear();
+			delete p_CircularBuffer;
+			p_CircularBuffer = 0;
+		}
+		if (resizable)
+		{
+			p_CircularBuffer = new circular_buffer_space_optimized<T>(bufferMaxSize);
+		}
+		else
+		{
+			p_CircularBuffer = new circular_buffer<T>(bufferMaxSize);
+		}
 	}
-	IDevice::Unitial();
+	catch (boost::exception& e)
+	{
+		return false;
+	}
+	return rtVal;
 }
 
-template<typename T1, typename T2>
-bool DataBuffer<T1, T2>::Set(char * setting, long settingLen)
+template <typename T>
+void DataBuffer<T>::Unitial()
+{
+	try
+	{
+		if (p_CircularBuffer!=0)
+		{
+			p_CircularBuffer->clear();
+			delete p_CircularBuffer;
+			p_CircularBuffer = 0;
+		}
+	}
+	catch (boost::exception& e)
+	{
+		return;
+	}
+	INode::Unitial();
+}
+
+template <typename T>
+bool DataBuffer<T>::Set(char * setting, long settingLen)
 {
 	try
 	{
@@ -38,20 +73,6 @@ bool DataBuffer<T1, T2>::Set(char * setting, long settingLen)
 		bufferMaxSize = MAX(pRoot.get<int>("bufferMaxSize"),2);
 		bufferType = pRoot.get<int>("bufferType");
 		resizable = pRoot.get<bool>("resizable");
-		if (p_CircularBuffer != 0)
-		{
-			p_CircularBuffer->clear();
-			delete p_CircularBuffer;
-			p_CircularBuffer = 0;
-		}
-		if (resizable)
-		{
-			p_CircularBuffer = new circular_buffer_space_optimized<T1>(bufferMaxSize);
-		} 
-		else
-		{
-			p_CircularBuffer = new circular_buffer<T1>(bufferMaxSize);
-		}		
 	}
 	catch (boost::exception& e)
 	{
@@ -60,8 +81,8 @@ bool DataBuffer<T1, T2>::Set(char * setting, long settingLen)
 	return INode::Set(setting, settingLen);
 }
 
-template<typename T1, typename T2>
-bool DataBuffer<T1, T2>::Get(char * setting, long settingLen)
+template <typename T>
+bool DataBuffer<T>::Get(char * setting, long settingLen)
 {
 	try
 	{
@@ -85,73 +106,61 @@ bool DataBuffer<T1, T2>::Get(char * setting, long settingLen)
 	return INode::Get(setting, settingLen);
 }
 
-template<typename T1, typename T2>
-bool DataBuffer<T1, T2>::Read(T2 & data, bool update)
+template <typename T>
+bool DataBuffer<T>::Read(T & data)
 {
 	if (p_CircularBuffer == 0) return false;
 	if (p_CircularBuffer->empty()) return false;
 	if (bufferType == BUF_QUEUE)
 	{
 		data = p_CircularBuffer->front();
-		if (update)
-		{
-			p_CircularBuffer->pop_front();
-		}
 	} 
 	else if(bufferType == BUF_STACK)
 	{
 		data = p_CircularBuffer->back();
-		if (update)
-		{
-			p_CircularBuffer->pop_back();
-		}
 	}
 	else return false;
 	return true;
 }
 
-template<typename T1, typename T2>
-bool DataBuffer<T1, T2>::Write(const T1 & data, bool force)
-{
-	if (p_CircularBuffer == 0) return false;
-	if (p_CircularBuffer->full())
-	{
-		if (force)
-		{
-			if (bufferType == BUF_QUEUE)
-			{
-				p_CircularBuffer->pop_front();
-			} 
-			else if(bufferType == BUF_STACK)
-			{
-				p_CircularBuffer->pop_front();
-			}
-			else return false;
-		}
-		else return false;
-	}
-	p_CircularBuffer->push_back(data);
-	return true;
-}
-
-template<typename T1, typename T2>
-bool DataBuffer<T1, T2>::Update()
+template <typename T>
+bool DataBuffer<T>::Update()
 {
 	if (p_CircularBuffer == 0) return false;
 	if (p_CircularBuffer->empty()) return false;
 	if (bufferType == BUF_QUEUE)
 	{
-		if (update)
-		{
-			p_CircularBuffer->pop_front();
-		}
+		p_CircularBuffer->pop_front();
 	}
 	else if (bufferType == BUF_STACK)
 	{
-		if (update)
-		{
-			p_CircularBuffer->pop_back();
-		}
+		p_CircularBuffer->pop_back();
+	}
+	else return false;
+	return true;
+}
+
+template <typename T>
+bool DataBuffer<T>::Write(const T & data)
+{
+	if (p_CircularBuffer == 0) return false;
+	if (p_CircularBuffer->full()) return false;
+	p_CircularBuffer->push_back(data);
+	return true;
+}
+
+template <typename T>
+bool DataBuffer<T>::Clear()
+{
+	if (p_CircularBuffer == 0) return false;
+	if (!p_CircularBuffer->full()) return true;
+	if (bufferType == BUF_QUEUE)
+	{
+		p_CircularBuffer->pop_front();
+	}
+	else if (bufferType == BUF_STACK)
+	{
+		p_CircularBuffer->pop_back();
 	}
 	else return false;
 	return true;

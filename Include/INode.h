@@ -11,6 +11,17 @@
 
 #pragma once
 #include "Macros.h"
+#include "PointerPool.h"
+#include <boost\thread.hpp> 
+using namespace boost;
+#ifndef ND_ERR
+#define ND_NORMAL     (int)0
+#define ND_ERR        (int)-1000
+#define ND_ERR_MEMOUT (int)ND_ERR-1
+#define ND_ERR_LOCKED (int)ND_ERR-2
+#define ND_ERR_PARA   (int)ND_ERR-3
+#endif
+
 
 ///////////////////////////////////////////////////
 /** \interface INode
@@ -24,27 +35,29 @@
 interface INode
 {
 private:
-	char name[128] = "";///< Device name
-	char path[512] = ""; ///< Device path
+	char name[128] = "";///< Node name
+	char path[512] = ""; ///< Node path
 	char ip[16] = "";///< IP address of host,not support multi-net
-	bool readUpdate = true; ///< If Read(...,bool update) in task
-	bool writeForce = false; ///< If Write(...,bool force) in task
-	bool accessBlocked = false; ///< Is buffer blocked in multi-threads
-private:
-	/// Handle of device
+public:
+	/// Handle of node
 	HANDLE m_handle = INVALID_HANDLE;
-	/** \enum Status
+	/** \enum ND_STATUS
 	*  \brief Status of node.
 	*  \author Leon Contact: towanglei@163.com
 	*/
 	enum ND_STATUS
 	{
-		ND_INVALID = 0, ///< Invalid device e.g. not exist
-		ND_UNITIALED = 1, ///< Available device but not initialed 
-		ND_INITIALED = 2 ///< Initialed device
+		ND_INVALID = 0, ///< Invalid node e.g. not exist
+		ND_UNITIALED = 1, ///< Available node but not initialed 
+		ND_INITIALED = 2 ///< Initialed node
 	};
 	/// Status of node
-	ND_STATUS m_status = ND_INVALID;
+	ND_STATUS m_status = ND_UNITIALED;
+	/// Err Code
+	int m_ErrCode = ND_NORMAL;
+	/// Shared lock to avoid conflicts in multi-thread access 
+	mutex m_section;
+
 public:
 	/// Default constructor
 	INode() {}
@@ -94,88 +107,179 @@ public:
 		Unitial();
 		return Initial(setting, settingLen);
 	};
+
+public:
+	/** \fn  Click
+	*  \brief Click node, run one time
+	*  \return bool
+	*/
+	virtual bool Click() = 0;
 };
 ///////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////
-/** \interface IDevice
+/** \interface IProducer
  *  \implements INode
- *  \brief Interface of all device object, include read and write function.
+ *  \brief Interface of all data producer object, include read function and >> operator.
  *  \note
  *   Inlined methods for better performents;\n
  *  \author Leon Contact: towanglei@163.com
  *  \version 1.0
  *  \date 2016/04/29 10:34
  */
-template <typename T1, typename T2>
-interface IDevice: implements INode
+template <typename T>
+interface IProducer: virtual public INode
 {
 public:
+	PointerPool linkOutPool;
+public:
 	/// Default constructor
-	IDevice() {}
-	/** \fn  ~IDevice
+	IProducer() {}
+	/** \fn  ~IProducer
 	*  \brief virtual destruct function, avoid delete wrong object
 	*/
-	virtual ~IDevice() {}
+	virtual ~IProducer() {}
+	/** \fn  Set
+	*  \brief Set node para without stop
+	*  \param[in] char* setting as json string
+	*  \return bool
+	*/
+	virtual bool Set(char* setting, long settingLen);
+	/** \fn  Get
+	*  \brief Get node para without stop
+	*  \param[in] char* setting as json string
+	*  \return bool
+	*/
+	virtual bool Get(char* setting, long settingLen);
+public:
 	/** \fn  Read
-	*  \brief Read form buffer of device, or process data and return.
+	*  \brief Read form buffer of node, or process data and return.
 	*  \note
-	*    If update buffer from physical device before read.\n
-	*    T2& data is deep copied from buffer/physical device.\n
-	*  \param[out/in] T2& data, T2 must be memory continues
-	*  \param[in] update =true will update device buffer after read
+	*    If update buffer from physical node before read.\n
+	*    T& data is deep copied from buffer/physical node.\n
+	*  \param[out/in] T& data, T must be memory continues
 	*  \return False if failed.
 	*/
-	virtual bool Read(T2 & data, bool update = false) = 0;
+	virtual bool Read(T & data) = 0;
 	/** \fn  operator>>
-	*  \brief Read form buffer of device, or process data and return.
+	*  \brief Read form buffer of node, or process data and return.
 	*  \note
-	*    If update buffer from physical device before read.\n
-	*    T2& data is deep copied from buffer/physical device.\n
-	*  \param[out/in] T2& data, T2 must has deep copy operator=
+	*    If update buffer from physical node before read.\n
+	*    T& data is deep copied from buffer/physical node.\n
+	*  \param[out/in] T& data, T must has deep copy operator=
 	*  \return False if failed.
 	*/
-	virtual bool operator >> (T2 & data) = 0
+	virtual bool operator >> (T & data)
 	{
-		return Read(data,readUpdate);
-	};
-	/** \fn  Write
-	*  \brief Write data into buffer of device,if force push buffer into physical device after write.
-	*  \note
-	*    T1& data is deep copied into buffer/physical device.\n
-	*  \param[in] T1& data, T1 must has deep copy operator=
-	*  \param[in] force = true will force data to physical device
-	*  \return False if failed.
-	*/
-	virtual bool Write(const T1 & data, bool force = false) = 0;
-	/** \fn  operator<<
-	*  \brief Write data into buffer of device,if force push buffer into physical device after write.
-	*  \note
-	*    T1& data is deep copied into buffer/physical device.\n
-	*  \param[in] T1& data, T1 must has deep copy operator=
-	*  \return False if failed.
-	*/
-	virtual bool operator<<(const T1 & data)
-	{
-		return Write(data,writeForce);
+		return Read(data);
 	};
 	/** \fn  Update
-	*  \brief Update buffer of device.
+	*  \brief Update buffer of node.
 	*  \note
-	*    If update buffer from physical device before read.\n
+	*    If update buffer from physical node before read.\n
 	*  \return False if failed.
 	*/
 	virtual bool Update() = 0;
 	/** \fn  operator++
-	*  \brief Update buffer of device.
+	*  \brief Update buffer of node.
 	*  \note
-	*    If update buffer from physical device before read.\n
+	*    If update buffer from physical node before read.\n
 	*  \return False if failed.
 	*/
-	virtual bool operator++()
+	virtual IProducer& operator++()
 	{
-		return Update();
+		Update();
+		return *this;
 	};
+
+public:
+	/** \fn  Click
+	*  \brief Click node, run one time
+	*  \return bool
+	*/
+	virtual bool Click();
+};
+///////////////////////////////////////////////////
+
+///////////////////////////////////////////////////
+/** \interface IConsumer
+*  \implements INode
+*  \brief Interface of all data consumer object, include write function and << operator.
+*  \note
+*   Inlined methods for better performents;\n
+*  \author Leon Contact: towanglei@163.com
+*  \version 1.0
+*  \date 2016/04/29 10:34
+*/
+template <typename T>
+interface IConsumer : virtual public INode
+{
+public:
+	PointerPool linkInPool;
+public:
+	/// Default constructor
+	IConsumer() {}
+	/** \fn  ~IConsumer
+	*  \brief virtual destruct function, avoid delete wrong object
+	*/
+	virtual ~IConsumer() {}
+	/** \fn  Set
+	*  \brief Set node para without stop
+	*  \param[in] char* setting as json string
+	*  \return bool
+	*/
+	virtual bool Set(char* setting, long settingLen);
+	/** \fn  Get
+	*  \brief Get node para without stop
+	*  \param[in] char* setting as json string
+	*  \return bool
+	*/
+	virtual bool Get(char* setting, long settingLen);
+public:
+	/** \fn  Write
+	*  \brief Write data into buffer of node,if force push buffer into physical node after write.
+	*  \note
+	*    T1& data is deep copied into buffer/physical node.\n
+	*  \param[in] T& data, T must has deep copy operator=
+	*  \return False if failed.
+	*/
+	virtual bool Write(const T & data) = 0;
+	/** \fn  operator<<
+	*  \brief Write data into buffer of node,if force push buffer into physical node after write.
+	*  \note
+	*    T& data is deep copied into buffer/physical node.\n
+	*  \param[in] T& data, T must has deep copy operator=
+	*  \return False if failed.
+	*/
+	virtual bool operator<<(const T & data)
+	{
+		return Write(data);
+	};
+	/** \fn  Clear
+	*  \brief Clear buffer of node.
+	*  \note
+	*    If update buffer from physical node before read.\n
+	*  \return False if failed.
+	*/
+	virtual bool Clear() = 0;
+	/** \fn  operator--()
+	*  \brief Update buffer of node.
+	*  \note
+	*    If update buffer from physical node before read.\n
+	*  \return False if failed.
+	*/
+	virtual IConsumer& operator--()
+	{
+		Clear();
+		return *this;
+	};
+
+public:
+	/** \fn  Click
+	*  \brief Click node, run one time
+	*  \return bool
+	*/
+	virtual bool Click();
 };
 ///////////////////////////////////////////////////
 
@@ -190,8 +294,10 @@ public:
  *  \date 2016/04/29 10:34
  */
 template <typename T1, typename T2 >
-interface IProcessor:implements INode
+interface IProcessor:public INode
 {
+public:
+	void* p_LinkOn = NULL_POINTER;
 public:
 	/// Default constructor
 	IProcessor() {}
@@ -216,6 +322,13 @@ public:
 	{
 		return Process(dataIn, dataOut);
 	};
+
+public:
+	/** \fn  Click
+	*  \brief Click node, run one time
+	*  \return bool
+	*/
+	virtual bool Click();
 };
 ///////////////////////////////////////////////////
 
