@@ -165,3 +165,9 @@ bool DataBuffer<T>::Clear()
 	else return false;
 	return true;
 }
+
+template <typename T>
+bool DataBuffer<T>::Click()
+{
+	return false;
+}

@@ -15,7 +15,7 @@
 using namespace boost;
 
 ///////////////////////////////////////////////////
-/** \class DataBuffer  \implements IProducer
+/** \class DataBuffer
 *  \brief Data buffer object, read and write circular_buffer.
 *  \author Leon Contact: towanglei@163.com
 *  \version 1.0
@@ -90,5 +90,11 @@ public:
 	*  \return False if failed.
 	*/
 	virtual bool Clear();
+public:
+	/** \fn  Click
+	*  \brief Invalid in this version
+	*  \return bool
+	*/
+	virtual bool Click();
 };
 
