@@ -37,6 +37,10 @@
 template <typename T1, typename T2>
 class Link : public BThread
 {
+//Thread tags
+public:
+	/// Class ID to distinct base and extend class.
+	const int m_classID = 1;
 private:
 	char name[128] = "";///< Link name
 	long& frameTimes = m_times; ///< Thread run times

@@ -45,7 +45,7 @@ using namespace boost;
  */
 class BThread
 {
-//类功能
+//Thread tags
 public:
 	/// BThread ID，+1 after construct.
 	static DWORD m_nThreadID;//2.0

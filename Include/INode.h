@@ -12,7 +12,7 @@
 #pragma once
 #include "Macros.h"
 #include "PointerPool.h"
-#include <boost\thread.hpp> 
+#include <boost\thread.hpp>
 using namespace boost;
 #ifndef ND_ERR
 #define ND_NORMAL     (int)0
@@ -21,7 +21,6 @@ using namespace boost;
 #define ND_ERR_LOCKED (int)ND_ERR-2
 #define ND_ERR_PARA   (int)ND_ERR-3
 #endif
-
 
 ///////////////////////////////////////////////////
 /** \interface INode
@@ -32,7 +31,7 @@ using namespace boost;
 *  \version 1.0
 *  \date 2016/04/29 10:34
 */
-interface INode
+class INode
 {
 private:
 	char name[128] = "";///< Node name
@@ -48,14 +47,14 @@ public:
 	enum ND_STATUS
 	{
 		ND_INVALID = 0, ///< Invalid node e.g. not exist
-		ND_UNITIALED = 1, ///< Available node but not initialed 
+		ND_UNITIALED = 1, ///< Available node but not initialed
 		ND_INITIALED = 2 ///< Initialed node
 	};
 	/// Status of node
 	ND_STATUS m_status = ND_UNITIALED;
 	/// Err Code
 	int m_ErrCode = ND_NORMAL;
-	/// Shared lock to avoid conflicts in multi-thread access 
+	/// Shared lock to avoid conflicts in multi-thread access
 	mutex m_section;
 
 public:
@@ -107,7 +106,6 @@ public:
 		Unitial();
 		return Initial(setting, settingLen);
 	};
-
 public:
 	/** \fn  Click
 	*  \brief Click node, run one time
@@ -128,7 +126,7 @@ public:
  *  \date 2016/04/29 10:34
  */
 template <typename T>
-interface IProducer: virtual public INode
+class IProducer: virtual public INode
 {
 public:
 	PointerPool linkOutPool;
@@ -139,18 +137,6 @@ public:
 	*  \brief virtual destruct function, avoid delete wrong object
 	*/
 	virtual ~IProducer() {}
-	/** \fn  Set
-	*  \brief Set node para without stop
-	*  \param[in] char* setting as json string
-	*  \return bool
-	*/
-	virtual bool Set(char* setting, long settingLen);
-	/** \fn  Get
-	*  \brief Get node para without stop
-	*  \param[in] char* setting as json string
-	*  \return bool
-	*/
-	virtual bool Get(char* setting, long settingLen);
 public:
 	/** \fn  Read
 	*  \brief Read form buffer of node, or process data and return.
@@ -191,7 +177,6 @@ public:
 		Update();
 		return *this;
 	};
-
 public:
 	/** \fn  Click
 	*  \brief Click node, run one time
@@ -212,7 +197,7 @@ public:
 *  \date 2016/04/29 10:34
 */
 template <typename T>
-interface IConsumer : virtual public INode
+class IConsumer : virtual public INode
 {
 public:
 	PointerPool linkInPool;
@@ -223,18 +208,6 @@ public:
 	*  \brief virtual destruct function, avoid delete wrong object
 	*/
 	virtual ~IConsumer() {}
-	/** \fn  Set
-	*  \brief Set node para without stop
-	*  \param[in] char* setting as json string
-	*  \return bool
-	*/
-	virtual bool Set(char* setting, long settingLen);
-	/** \fn  Get
-	*  \brief Get node para without stop
-	*  \param[in] char* setting as json string
-	*  \return bool
-	*/
-	virtual bool Get(char* setting, long settingLen);
 public:
 	/** \fn  Write
 	*  \brief Write data into buffer of node,if force push buffer into physical node after write.
@@ -273,7 +246,6 @@ public:
 		Clear();
 		return *this;
 	};
-
 public:
 	/** \fn  Click
 	*  \brief Click node, run one time
@@ -294,7 +266,7 @@ public:
  *  \date 2016/04/29 10:34
  */
 template <typename T1, typename T2 >
-interface IProcessor:public INode
+class IProcessor:public INode
 {
 public:
 	void* p_LinkOn = NULL_POINTER;
@@ -322,7 +294,6 @@ public:
 	{
 		return Process(dataIn, dataOut);
 	};
-
 public:
 	/** \fn  Click
 	*  \brief Click node, run one time
