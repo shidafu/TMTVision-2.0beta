@@ -65,7 +65,7 @@ public:
 					{
 						endIndex = Previous(endIndex);
 					}
-					return i;
+					return true;
 				}
 				findNum++;
 			}
