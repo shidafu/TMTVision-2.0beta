@@ -54,9 +54,11 @@ private:
 	int writeAndClear= ClearThenWrite; ///< If case:0 Write without Clear; case:1 Write then Clear; case:-1 Clear then Write.
 	bool writeBlocked = false; ///< Is data blocked in multi-threads writing
 private:
-	IProducer<T1>* p_Producer = 0; ///< Producer object pointer
-	IConsumer<T2>* p_Consumer = 0; ///< Consumer object pointer
-	IProcessor<T1,T2>* p_Processor = 0; ///< Processor object pointer
+	bool triggerInside = false; ///< Is object pointer triggered inside or outside
+	IProducer<T1>* p_Producer = 0; ///< Produce object pointer
+	IConsumer<T2>* p_Consumer = 0; ///< Consume object pointer
+	IProcessor<T1,T2>* p_Processor = 0; ///< Process object pointer
+
 public:
 	/// Handle of node
 	HANDLE& m_handle = m_hThread;
@@ -125,18 +127,6 @@ public:
 public:
 	/// Task function for once run
 	virtual void  Task(void);
-	///// Call back function called by consumer or producer
-	//void callBack()
-	//{
-	//	timer arWatch;
-	//	Link* thisObj = (Link*)para;
-	//	thisObj->m_section.lock();
-	//	thisObj->Task();
-	//	thisObj->m_section.unlock();
-	//	thisObj->m_taskTime = arWatch.elapsed() * 1000;
-	//	thisObj->m_frameTime = thisObj->m_taskTime;
-	//	std::cout << "times:" << 1 << ",taskTime: " << thisObj->m_taskTime << ",frameTime: " << thisObj->m_frameTime << std::endl;
-	//}
 
 public:
 	/** \fn  AttachProducer
@@ -278,6 +268,7 @@ public:
 			m_section.unlock();
 		}
 		else rtVal = false;
+		if (rtVal) triggerInside = true;
 		return rtVal;
 	}
 	/** \fn  StopLink
@@ -293,14 +284,25 @@ public:
 			m_section.unlock();
 		}
 		else rtVal = false;
+		if (rtVal) triggerInside = false;
 		return rtVal;
 	}
+
+	/** \fn  TriggerInside
+	*  \brief Trigger-inside mode means Started Link.
+	*  \return bool
+	*/
+	virtual bool TriggerInside()
+	{
+		return triggerInside;
+	}
 	/** \fn  Click
-	*  \brief Click link to run once
+	*  \brief Click link to run once, only work in Stopped Link(Trigger-outside mode).
 	*  \return bool
 	*/
 	virtual bool Click()
 	{
+		if (triggerInside) return false;
 		bool rtVal = true;
 		if (m_section.try_lock())
 		{
