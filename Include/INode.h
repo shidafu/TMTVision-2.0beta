@@ -197,7 +197,7 @@ public:
 *  \date 2016/06/16 10:34
 */
 template <typename T1>
-class ConstProducer : virtual public IProducer
+class ConstProducer : virtual public IProducer<T1>
 {
 private:
 	T1 constData;
@@ -304,7 +304,7 @@ public:
 *  \date 2016/06/16 10:34
 */
 template <typename T2>
-class ConstConsumer : virtual public IConsumer
+class ConstConsumer : virtual public IConsumer<T2>
 {
 public:
 	/** \fn  Write
