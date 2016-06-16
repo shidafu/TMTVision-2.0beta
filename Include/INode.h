@@ -125,7 +125,7 @@ public:
  *  \version 1.0
  *  \date 2016/04/29 10:34
  */
-template <typename T>
+template <typename T1>
 class IProducer: virtual public INode
 {
 public:
@@ -142,20 +142,20 @@ public:
 	*  \brief Read form buffer of node, or process data and return.
 	*  \note
 	*    If update buffer from physical node before read.\n
-	*    T& data is deep copied from buffer/physical node.\n
-	*  \param[out/in] T& data, T must be memory continues
+	*    T1& data is deep copied from buffer/physical node.\n
+	*  \param[out/in] T1& data, T1 must be memory continues
 	*  \return False if failed.
 	*/
-	virtual bool Read(T & data) = 0;
+	virtual bool Read(T1 & data) = 0;
 	/** \fn  operator>>
 	*  \brief Read form buffer of node, or process data and return.
 	*  \note
 	*    If update buffer from physical node before read.\n
-	*    T& data is deep copied from buffer/physical node.\n
-	*  \param[out/in] T& data, T must has deep copy operator=
+	*    T1& data is deep copied from buffer/physical node.\n
+	*  \param[out/in] T1& data, T1 must has deep copy operator=
 	*  \return False if failed.
 	*/
-	virtual bool operator >> (T & data)
+	virtual bool operator >> (T1 & data)
 	{
 		return Read(data);
 	};
@@ -187,6 +187,44 @@ public:
 ///////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////
+/** \interface ConstProducer
+*  \implements IProducer
+*  \brief Produce const value of T1.
+*  \note
+*   Inlined methods for better performents;\n
+*  \author Leon Contact: towanglei@163.com
+*  \version 1.0
+*  \date 2016/06/16 10:34
+*/
+template <typename T1>
+class ConstProducer : virtual public IProducer
+{
+private:
+	T1 constData;
+public:
+	/// Setting constructor
+	ConstProducer(T1& data);
+public:
+	/** \fn  Read
+	*  \brief Read form buffer of node, or process data and return.
+	*  \note
+	*    If update buffer from physical node before read.\n
+	*    T1& data is deep copied from buffer/physical node.\n
+	*  \param[out/in] T1& data, T1 must be memory continues
+	*  \return False if failed.
+	*/
+	virtual bool Read(T1 & data);
+	/** \fn  Update
+	*  \brief Update buffer of node.
+	*  \note
+	*    If update buffer from physical node before read.\n
+	*  \return False if failed.
+	*/
+	virtual bool Update(T1& data);
+};
+///////////////////////////////////////////////////
+
+///////////////////////////////////////////////////
 /** \interface IConsumer
 *  \implements INode
 *  \brief Interface of all data consumer object, include write function and << operator.
@@ -196,7 +234,7 @@ public:
 *  \version 1.0
 *  \date 2016/04/29 10:34
 */
-template <typename T>
+template <typename T2>
 class IConsumer : virtual public INode
 {
 public:
@@ -212,19 +250,19 @@ public:
 	/** \fn  Write
 	*  \brief Write data into buffer of node,if force push buffer into physical node after write.
 	*  \note
-	*    T1& data is deep copied into buffer/physical node.\n
-	*  \param[in] T& data, T must has deep copy operator=
+	*    T2& data is deep copied into buffer/physical node.\n
+	*  \param[in] T2& data, T2 must has deep copy operator=
 	*  \return False if failed.
 	*/
-	virtual bool Write(const T & data) = 0;
+	virtual bool Write(const T2 & data) = 0;
 	/** \fn  operator<<
 	*  \brief Write data into buffer of node,if force push buffer into physical node after write.
 	*  \note
-	*    T& data is deep copied into buffer/physical node.\n
-	*  \param[in] T& data, T must has deep copy operator=
+	*    T2& data is deep copied into buffer/physical node.\n
+	*  \param[in] T2& data, T 2must has deep copy operator=
 	*  \return False if failed.
 	*/
-	virtual bool operator<<(const T & data)
+	virtual bool operator<<(const T2 & data)
 	{
 		return Write(data);
 	};
@@ -252,6 +290,44 @@ public:
 	*  \return bool
 	*/
 	virtual bool Click();
+};
+///////////////////////////////////////////////////
+
+///////////////////////////////////////////////////
+/** \interface ConstConsumer
+*  \implements IConsumer
+*  \brief Const Consumer do nothing.
+*  \note
+*   Inlined methods for better performents;\n
+*  \author Leon Contact: towanglei@163.com
+*  \version 1.0
+*  \date 2016/06/16 10:34
+*/
+template <typename T2>
+class ConstConsumer : virtual public IConsumer
+{
+public:
+	/** \fn  Write
+	*  \brief Write data into buffer of node,if force push buffer into physical node after write.
+	*  \note
+	*    T2& data is deep copied into buffer/physical node.\n
+	*  \param[in] T2& data, T2 must has deep copy operator=
+	*  \return False if failed.
+	*/
+	virtual bool Write(const T2 & data)
+	{
+		return true;
+	}
+	/** \fn  Clear
+	*  \brief Clear buffer of node.
+	*  \note
+	*    If update buffer from physical node before read.\n
+	*  \return False if failed.
+	*/
+	virtual bool Clear()
+	{
+		return true;
+	}
 };
 ///////////////////////////////////////////////////
 
@@ -302,4 +378,3 @@ public:
 	virtual bool Click();
 };
 ///////////////////////////////////////////////////
-

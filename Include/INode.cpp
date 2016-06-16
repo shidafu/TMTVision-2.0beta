@@ -67,8 +67,9 @@ bool INode::Get(char* setting, long settingLen)
 	return true;
 }
 
-template <typename T>
-bool IProducer<T>::Click()
+
+template <typename T1>
+bool IProducer<T1>::Click()
 {
 	for (int i = linkOutPool.Begin(); i <= linkOutPool.End(); i = linkOutPool.Next(i))
 	{
@@ -80,8 +81,49 @@ bool IProducer<T>::Click()
 	}
 }
 
-template <typename T>
-bool IConsumer<T>::Click()
+
+template<typename T1>
+ConstProducer<T1>::ConstProducer(T1 & data)
+{
+	try
+	{
+		constData = data;
+	}
+	catch (boost::exception& e)
+	{
+	}
+}
+
+template<typename T1>
+bool ConstProducer<T1>::Read(T1 & data)
+{
+	try
+	{
+		data = constData;
+	}
+	catch (boost::exception& e)
+	{
+		return false;
+	}
+	return true;
+}
+
+template<typename T1>
+bool ConstProducer<T1>::Update(T1 & data)
+{
+	try
+	{
+		constData = data;
+	}
+	catch (boost::exception& e)
+	{
+		return false;
+	}
+	return true;
+}
+
+template <typename T2>
+bool IConsumer<T2>::Click()
 {
 	for (int i = linkInPool.Begin(); i <= linkInPool.End(); i = linkInPool.Next(i))
 	{
