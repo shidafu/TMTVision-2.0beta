@@ -127,8 +127,11 @@ void  Link<T1, T2>::Task(void)
 {
 	// Check status validate
 	if (m_handle == INVALID_HANDLE || m_status != LK_INITIALED) return false;//Server not initialed
-	if (p_Producer == 0 || p_Consumer == 0) return false;//Device not Attached
-	if (p_Producer->m_status != INode::ND_INITIALED) return false;//Device error or not initialed
+	if (/*p_Producer == 0 || */p_Consumer == 0) return false;//Device not Attached
+	if (p_Producer != 0)
+	{
+		if (p_Producer->m_status != INode::ND_INITIALED) return false;//Device error or not initialed
+	}
 	if (p_Consumer->m_status != INode::ND_INITIALED) return false;//Device error or not initialed
 
 	// Temp data
@@ -136,33 +139,40 @@ void  Link<T1, T2>::Task(void)
 	T1 tmpT1Out;
 	T2 tmpT2Out;
 	T2& tmpT2OutRef = tmpT2Out;
+	bool readedOrProcessed = false;
 
-	// Read data
-	bool readOK = true;
-	p_Producer->m_section.lock();
-	switch (readAndUpdate)
+	if (p_Producer != 0)
 	{
-	case ReadNoUpdate:
-		readOK& = p_Producer->Read(tmpT1In);
-		break;
-	case ReadThenUpdate:
-		readOK& = p_Producer->Read(tmpT1In);
-		readOK& = p_Producer->Update();
-		break;
-	case UpdateThenRead:
-		readOK& = p_Producer->Update();
-		readOK& = p_Producer->Read(tmpT1In);
-		break;
-	default:
-		m_ErrCode = LK_ERR_PARA;
+		// Read data
+		bool readOK = true;
+		p_Producer->m_section.lock();
+		switch (readAndUpdate)
+		{
+		case ReadNoUpdate:
+			readOK& = p_Producer->Read(tmpT1In);
+			readedOrProcessed = true;
+			break;
+		case ReadThenUpdate:
+			readOK& = p_Producer->Read(tmpT1In);
+			readOK& = p_Producer->Update();
+			readedOrProcessed = true;
+			break;
+		case UpdateThenRead:
+			readOK& = p_Producer->Update();
+			readOK& = p_Producer->Read(tmpT1In);
+			readedOrProcessed = true;
+			break;
+		default:
+			m_ErrCode = LK_ERR_PARA;
+			p_Producer->m_section.unlock();
+			return;
+		}
 		p_Producer->m_section.unlock();
-		return;
-	}
-	p_Producer->m_section.unlock();
-	if (!readOK)
-	{
-		m_ErrCode = LK_ERR_READ;
-		return;
+		if (!readOK)
+		{
+			m_ErrCode = LK_ERR_READ;
+			return;
+		}
 	}
 
 	// Process data
@@ -181,7 +191,8 @@ void  Link<T1, T2>::Task(void)
 	else
 	{
 		bool processOK = true;
-		readOK& = p_Processor->Process(tmpT1In,tmpT2Out);
+		readOK& = p_Processor->Process(tmpT1In, tmpT2Out);
+		readedOrProcessed = true;
 	}
 	if (!readOK)
 	{
@@ -190,6 +201,7 @@ void  Link<T1, T2>::Task(void)
 	}
 
 	// Write data
+	if (!readedOrProcessed) return;
 	bool writeOK = true;
 	p_Consumer->m_section.lock();
 	switch (writeAndClear)
