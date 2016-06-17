@@ -3,18 +3,32 @@
 using namespace std;
 using namespace boost;
 
-template <typename T>
-DataBuffer<T>::DataBuffer()
+template <typename T1, typename T2 = T1>
+DataBuffer<T1, T2>::DataBuffer()
+{
+	try
+	{
+		if (typeindex(T1) != typeindex(T2))
+		{
+			DWORD e;
+			throw e;
+		}
+	}
+	catch (DWORD& e)
+	{
+	}
+	catch (boost::exception& e)
+	{
+	}
+}
+
+template <typename T1, typename T2 = T1>
+DataBuffer<T1, T2>::~DataBuffer()
 {
 }
 
-template <typename T>
-DataBuffer<T>::~DataBuffer()
-{
-}
-
-template <typename T>
-bool DataBuffer<T>::Initial(char* setting, long settingLen)
+template <typename T1, typename T2 = T1>
+bool DataBuffer<T1, T2>::Initial(char* setting, long settingLen)
 {
 	bool rtVal = INode::Initial(setting, settingLen);
 	try
@@ -41,8 +55,8 @@ bool DataBuffer<T>::Initial(char* setting, long settingLen)
 	return rtVal;
 }
 
-template <typename T>
-void DataBuffer<T>::Unitial()
+template <typename T1, typename T2 = T1>
+void DataBuffer<T1, T2>::Unitial()
 {
 	try
 	{
@@ -60,8 +74,8 @@ void DataBuffer<T>::Unitial()
 	INode::Unitial();
 }
 
-template <typename T>
-bool DataBuffer<T>::Set(char * setting, long settingLen)
+template <typename T1, typename T2 = T1>
+bool DataBuffer<T1, T2>::Set(char * setting, long settingLen)
 {
 	try
 	{
@@ -81,8 +95,8 @@ bool DataBuffer<T>::Set(char * setting, long settingLen)
 	return INode::Set(setting, settingLen);
 }
 
-template <typename T>
-bool DataBuffer<T>::Get(char * setting, long settingLen)
+template <typename T1, typename T2 = T1>
+bool DataBuffer<T1, T2>::Get(char * setting, long settingLen)
 {
 	try
 	{
@@ -106,8 +120,8 @@ bool DataBuffer<T>::Get(char * setting, long settingLen)
 	return INode::Get(setting, settingLen);
 }
 
-template <typename T>
-bool DataBuffer<T>::Read(T & data)
+template <typename T1, typename T2 = T1>
+bool DataBuffer<T1, T2>::Read(T1 & data)
 {
 	if (p_CircularBuffer == 0) return false;
 	if (p_CircularBuffer->empty()) return false;
@@ -123,8 +137,8 @@ bool DataBuffer<T>::Read(T & data)
 	return true;
 }
 
-template <typename T>
-bool DataBuffer<T>::Update()
+template <typename T1, typename T2 = T1>
+bool DataBuffer<T1, T2>::Update()
 {
 	if (p_CircularBuffer == 0) return false;
 	if (p_CircularBuffer->empty()) return false;
@@ -140,8 +154,8 @@ bool DataBuffer<T>::Update()
 	return true;
 }
 
-template <typename T>
-bool DataBuffer<T>::Write(const T & data)
+template <typename T1, typename T2 = T1>
+bool DataBuffer<T1, T2>::Write(const T2 & data)
 {
 	if (p_CircularBuffer == 0) return false;
 	if (p_CircularBuffer->full()) return false;
@@ -149,8 +163,8 @@ bool DataBuffer<T>::Write(const T & data)
 	return true;
 }
 
-template <typename T>
-bool DataBuffer<T>::Clear()
+template <typename T1, typename T2 = T1>
+bool DataBuffer<T1, T2>::Clear()
 {
 	if (p_CircularBuffer == 0) return false;
 	if (!p_CircularBuffer->full()) return true;
@@ -166,8 +180,8 @@ bool DataBuffer<T>::Clear()
 	return true;
 }
 
-template <typename T>
-bool DataBuffer<T>::Click()
+template <typename T1, typename T2 = T1>
+bool DataBuffer<T1,T2>::Click()
 {
 	return false;
 }

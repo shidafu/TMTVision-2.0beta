@@ -21,15 +21,15 @@ using namespace boost;
 *  \version 1.0
 *  \date 2016/04/29 10:34
 */
-template <typename T>
-class DataBuffer : virtual public IProducer<T>, virtual public IConsumer<T>
+template <typename T1, typename T2 = T1>
+class DataBuffer : virtual public IProducer<T1>, virtual public IConsumer<T2>
 {
 private:
 	int bufferMaxSize = 8; ///< Data list size
 	enum { BUF_QUEUE = 0, BUF_STACK = 1 };
 	int bufferType = BUF_QUEUE; ///< Is queue or stack
 	bool resizable = false; ///< Is buffer resizable
-	circular_buffer<T>* p_CircularBuffer = 0;
+	circular_buffer<T1>* p_CircularBuffer = 0;
 public:
 	/// Default constructor
 	DataBuffer();
@@ -67,7 +67,7 @@ public:
 	*  \param[out/in] T& data, T must be memory continues
 	*  \return False if failed.
 	*/
-	virtual bool Read(T & data);
+	virtual bool Read(T1 & data);
 	/** \fn  Update
 	*  \brief Update buffer of device.
 	*  \note
@@ -82,7 +82,7 @@ public:
 	*  \param[in] T& data, T must be memory continues
 	*  \return False if failed.
 	*/
-	virtual bool Write(const T & data);
+	virtual bool Write(const T2 & data);
 	/** \fn  Clear
 	*  \brief Clear buffer of device.
 	*  \note
