@@ -1,0 +1,4 @@
+[2016-06-21, 11:18:03.986324]<error>(0x00003108){int __cdecl wmain(int,wchar_t *[]) (d:\tmtproject\code\tmtvision-2.0beta\demo\test\logtool_test.cpp:16)}:In main
+[2016-06-21, 11:18:03.991327]<error>(0x00003108){int __cdecl wmain(int,wchar_t *[]) (d:\tmtproject\code\tmtvision-2.0beta\demo\test\logtool_test.cpp:21)}:In main
+[2016-06-21, 11:18:03.992329]<error>(0x00003108){int __cdecl wmain(int,wchar_t *[]) (d:\tmtproject\code\tmtvision-2.0beta\demo\test\logtool_test.cpp:26)}:In main
+[2016-06-21, 11:18:03.993329]<error>(0x00003108){int __cdecl wmain(int,wchar_t *[]) (d:\tmtproject\code\tmtvision-2.0beta\demo\test\logtool_test.cpp:31)}:In main
