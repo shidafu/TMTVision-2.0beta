@@ -8,6 +8,6 @@
 #ifndef CONTAINER
 #define CONTAINER
 #include "Container\SimpArray_base.hpp"
-#include "Container\PointerPool_base.hpp"
+#include "Container\PointerPool_singleton.hpp"
 #include "Container\PointerPool_templated.hpp"
 #endif

@@ -1,7 +1,6 @@
 #include "stdafx.h" 
 //#include "Container.hpp"
 //ObjectArray<int,11> objectArray;
-//PointerPool_base pointerPool_base;
 //PointerPool_templated<3> pointerPool_templated;
 //int _tmain(int argc, _TCHAR* argv[])
 //{
