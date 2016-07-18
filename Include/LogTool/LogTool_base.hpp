@@ -28,6 +28,9 @@
 
 #include <boost/log/support/date_time.hpp>
 
+#include <boost/thread/mutex.hpp>
+//#include <boost\thread.hpp>
+
 namespace logging = boost::log;
 namespace sinks = boost::log::sinks;
 namespace attrs = boost::log::attributes;
@@ -36,8 +39,8 @@ namespace expr = boost::log::expressions;
 namespace keywords = boost::log::keywords;
 
 using boost::shared_ptr;
+using namespace boost;
 using namespace boost::log::trivial;
-
 //! Trivial severity levels
 //enum severity_level
 //{
@@ -49,8 +52,15 @@ using namespace boost::log::trivial;
 //	fatal
 //};
 
+//#define  LOG_ENABLE
+/// ShowMode
+#define LOG_NULL      (int)0x00
+#define LOG_CONSOLE   (int)0x01
+#define	LOG_FILE      (int)0x10
+#define	LOG_BOTH      (int)0x11
+
 /* \class LogTool : 
-   \brief A singleton class:LogTool£¬Initial debug tool will construct.
+   \brief A lazy mode singleton class:LogTool£¬Initial debug tool will construct.
    \note
       Use like: 
 	    LogTool::Initial("C\\log.log");//just call once anywhere.
@@ -63,60 +73,99 @@ using namespace boost::log::trivial;
 */
 class LogTool
 {
+private:
+	mutex m_mutex;
 public:
+	bool isInitialed = false;
+	bool isEnabled = false;
 	// Now, let's try logging with severity
 	src::severity_logger< logging::trivial::severity_level > slg;
-	char logPathName[512] = "";
-	void Initial(char* pathName)
+	/// Initial LogTool behavior.
+	void Initial(char* pathName, int logMod = LOG_FILE, severity_level levelFilter = logging::trivial::info)
 	{
-		if (logPathName[0] != 0) return;
-		strcpy_s(logPathName, sizeof(logPathName), pathName);
+		m_mutex.lock();
+		if (logMod == LOG_NULL)
+		{
+			isEnabled = false;
+			return;
+		}
+		else
+		{
+			isEnabled = true;
+		}
+		if (isInitialed) return;
+		m_mutex.unlock();
 #ifdef _DEBUG
-		//logging::add_console_log
-		//(
-		//	std::clog, 
-		//	keywords::format = "sample_%N.log",
-		//	keywords::filter = expr::attr< severity_level >("Severity") >= warning,
-		//	keywords::format = expr::stream
-		//  << "[" << expr::format_date_time< boost::posix_time::ptime >("TimeStamp", "%Y-%m-%d, %H:%M:%S.%f")
-		//	<< "]<" << expr::attr< logging::trivial::severity_level >("Severity")// == severity_level::warning ? "warning" : "error")//<< logging::trivial::severity //
-		//	<< ">(" << expr::attr<attrs::current_thread_id::value_type >("ThreadID")
-		//	<< "){" << expr::format_named_scope("Scope", keywords::format = "%n (%f:%l)")
-		//	<< "}:" << expr::message
-		//);
-		logging::add_file_log
-		(
-			keywords::file_name = logPathName,
-			keywords::rotation_size = 10 * 1024 * 1024,
-			keywords::time_based_rotation = sinks::file::rotation_at_time_point(0, 0, 0),
-			keywords::format = expr::stream
-			<< "[" << expr::format_date_time< boost::posix_time::ptime >("TimeStamp", "%Y-%m-%d, %H:%M:%S.%f")
-			<< "]<" << expr::attr< logging::trivial::severity_level >("Severity")// == severity_level::warning ? "warning" : "error")//<< logging::trivial::severity //
-			<< ">(" << expr::attr<attrs::current_thread_id::value_type >("ThreadID")
-			<< "){" << expr::format_named_scope("Scope", keywords::format = "%n (%f:%l)")
-			<< "}:" << expr::message
-		);
+		if ((logMod & LOG_CONSOLE)== LOG_CONSOLE)
+		{
+			logging::add_console_log
+			(
+				std::clog,
+				keywords::format = expr::stream
+			    << "[" << expr::format_date_time< boost::posix_time::ptime >("TimeStamp", "%Y-%m-%d, %H:%M:%S.%f")
+				<< "]<" << expr::attr< logging::trivial::severity_level >("Severity")// == severity_level::warning ? "warning" : "error")//<< logging::trivial::severity //
+				<< ">(" << expr::attr<attrs::current_thread_id::value_type >("ThreadID")
+				<< "){" << expr::format_named_scope("Scope", keywords::format = "%n (%f:%l)")
+				<< "}:" << expr::message
+			);
+		}
+		if ((logMod & LOG_FILE)== LOG_FILE)
+		{
+			logging::add_file_log
+			(
+				keywords::file_name = pathName,
+				keywords::rotation_size = 10 * 1024 * 1024,
+				keywords::time_based_rotation = sinks::file::rotation_at_time_point(0, 0, 0),
+				keywords::format = expr::stream
+				<< "[" << expr::format_date_time< boost::posix_time::ptime >("TimeStamp", "%Y-%m-%d, %H:%M:%S.%f")
+				<< "]<" << expr::attr< logging::trivial::severity_level >("Severity")// == severity_level::warning ? "warning" : "error")//<< logging::trivial::severity //
+				<< ">(" << expr::attr<attrs::current_thread_id::value_type >("ThreadID")
+				<< "){" << expr::format_named_scope("Scope", keywords::format = "%n (%f:%l)")
+				<< "}:" << expr::message
+			);
+		}
 		logging::core::get()->set_filter
 		(
-			logging::trivial::severity >= logging::trivial::info
+			logging::trivial::severity >= levelFilter/*logging::trivial::info*/
 		);
 		// Also let's add some commonly used attributes, like timestamp and record counter.  /*LogTool::GetInstance()->slg.add_attribute("Uptime", attrs::timer());*/
 		logging::add_common_attributes();
 		logging::core::get()->add_global_attribute("Scope", attrs::named_scope());
 #endif
+		m_mutex.lock();
+		isInitialed = true;
+		m_mutex.unlock();
 	};
 private:
+	/// Singleton construction.
 	LogTool()
 	{
 
 	};
 public:
+	/// Singleton get instance method, lazy mode.
 	static LogTool * GetInstance()
 	{
 		static LogTool instance;
 		return &instance;
 	};
 };
+
+//#ifndef WRITE_LOG
+//#ifdef LOG_ENABLE
+//#define WRITE_LOG(level, tag) {if(LogTool::GetInstance()->isEnabled) {BOOST_LOG_FUNCTION();BOOST_LOG_SEV(LogTool::GetInstance()->slg, level) << tag;}}
+//#else
+//#define WRITE_LOG(level, tag) BOOST_LOG_TRIVIAL(level)<<tag; //severity_level::error, ""
+//#endif
+//#endif
+//
+//#ifndef INITIAL_LOG
+//#ifdef LOG_ENABLE
+//#define INITIAL_LOG(pathName, logMod, levelFilter) {LogTool::GetInstance()->Initial(pathName, logMod, levelFilter);}
+//#else
+//#define INITIAL_LOG(pathName, logMod, levelFilter) //"", LOG_CONSOLE|LOG_FILE, severity_level::info
+//#endif
+//#endif
 
 #endif
 

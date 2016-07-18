@@ -7,6 +7,5 @@
 #pragma once
 #ifndef BTHREAD
 #define BTHREAD
-#include <boost\thread.hpp>
 #include "BThread\BThread_base.hpp"
 #endif

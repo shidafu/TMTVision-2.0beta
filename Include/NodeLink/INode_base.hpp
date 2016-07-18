@@ -12,9 +12,12 @@
 #ifndef INODE_BASE
 #define INODE_BASE
 
-#include "..\Macros.h"
-#include "..\Container\PointerPool_templated.hpp"
+#include "..\Macros.hpp"
+//#include "..\Container\PointerPool_templated.hpp"
+#include "..\LogTool.hpp"
+#include <boost\property_tree\json_parser.hpp>
 #include <boost\thread.hpp>
+using namespace std;
 using namespace boost;
 #ifndef ND_ERR
 #define ND_NORMAL     (int)0
@@ -34,7 +37,7 @@ using namespace boost;
 */
 class INode
 {
-private:
+public:
 	char name[128] = "";///< Node name
 	char path[512] = ""; ///< Node path
 	char ip[16] = "";///< IP address of host,not support multi-net
@@ -101,7 +104,7 @@ public:
 		}
 		catch (...)
 		{
-			OutputDebugStringEx("INode::Unitial().", LogLevel::debugLevel);
+			WRITE_LOG(severity_level::error, name);
 			return;
 		}
 		return;
@@ -126,7 +129,7 @@ public:
 		}
 		catch (...)
 		{
-			OutputDebugStringEx("INode::Set().", LogLevel::debugLevel);
+			WRITE_LOG(severity_level::error, name);
 			return false;
 		}
 		return true;
@@ -150,12 +153,12 @@ public:
 			pRoot.put("ip", ip);
 			write_json(stream, pRoot);
 			//settingStr.clear();
-			stream >> settingStr;
+			settingStr = stream.str();
 			strcpy_s(setting, settingLen, settingStr.data());
 		}
 		catch (...)
 		{
-			OutputDebugStringEx("INode::Get().", LogLevel::debugLevel);
+			WRITE_LOG(severity_level::error, name);
 			return false;
 		}
 		return true;
@@ -184,7 +187,7 @@ template <typename T1>
 class IProducer: virtual public INode
 {
 public:
-	PointerPool_templated<8> linkOutPool;
+	//PointerPool_templated<8> linkOutPool;
 public:
 	/// Default constructor
 	IProducer() {};
@@ -226,6 +229,17 @@ private:
 	T1 constData;
 public:
 	/// Setting constructor
+	ConstProducer()
+	{
+		try
+		{
+		}
+		catch (...)
+		{
+			WRITE_LOG(severity_level::error, name);
+		}
+	}
+	/// Setting constructor
 	ConstProducer(T1& data)
 	{
 		try
@@ -234,7 +248,7 @@ public:
 		}
 		catch (...)
 		{
-			OutputDebugStringEx("ConstProducer::ConstProducer().", LogLevel::debugLevel);
+			WRITE_LOG(severity_level::error, name);
 		}
 	}
 public:
@@ -251,10 +265,11 @@ public:
 		try
 		{
 			data = constData;
+			WRITE_LOG(severity_level::trace, name);
 		}
 		catch (...)
 		{
-			OutputDebugStringEx("ConstProducer::Read().", LogLevel::debugLevel);
+			WRITE_LOG(severity_level::error, name);
 			return false;
 		}
 		return true;
@@ -265,15 +280,16 @@ public:
 	    If update buffer from physical node before read.\n
 	  \return False if failed.
 	*/
-	virtual bool Update(T1& data)
+	virtual bool Update()
 	{
 		try
 		{
-			constData = data;
+			//constData = data;T1& data
+			WRITE_LOG(severity_level::trace, name);
 		}
 		catch (...)
 		{
-			OutputDebugStringEx("ConstProducer::Update().", LogLevel::debugLevel);
+			WRITE_LOG(severity_level::error, name);
 			return false;
 		}
 		return true;
@@ -292,7 +308,7 @@ template <typename T2>
 class IConsumer : virtual public INode
 {
 public:
-	PointerPool_templated<8> linkInPool;
+	//PointerPool_templated<8> linkInPool;
 public:
 	/// Default constructor
 	IConsumer() {};
@@ -339,6 +355,7 @@ public:
 	*/
 	virtual bool Write(const T2 & data)
 	{
+		WRITE_LOG(severity_level::trace, name);
 		return true;
 	}
 	/* \fn  Clear
@@ -349,6 +366,7 @@ public:
 	*/
 	virtual bool Clear()
 	{
+		WRITE_LOG(severity_level::trace, name);
 		return true;
 	}
 };
@@ -365,7 +383,7 @@ template <typename T1, typename T2 >
 class IProcessor:public INode
 {
 public:
-	void* p_LinkOn = NULL_POINTER;
+	//void* p_LinkOn = NULL_POINTER;
 public:
 	/// Default constructor
 	IProcessor() {};

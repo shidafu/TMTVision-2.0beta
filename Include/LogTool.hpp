@@ -19,7 +19,7 @@
 #include "LogTool\LogTool_base.hpp"
 
 /// Enable/disable WRITE_LOG by define/comment this macros.
-#define LOG_ENABLE
+//#define LOG_ENABLE
 
 ///// Debug Level
 //enum severity_level
@@ -31,16 +31,26 @@
 //	errorLevel = (int)5,
 //	fatalLevel = (int)6
 //};
-
+#define LOG_ENABLE
 #ifndef WRITE_LOG
 #ifdef LOG_ENABLE
-#define WRITE_LOG(level, tag) {BOOST_LOG_FUNCTION();BOOST_LOG_SEV(LogTool::GetInstance()->slg, level) << tag;}
+#define WRITE_LOG(level, tag) {if(LogTool::GetInstance()->isEnabled) {BOOST_LOG_FUNCTION();BOOST_LOG_SEV(LogTool::GetInstance()->slg, level) << tag;}}
 #else
-#define WRITE_LOG(level, tag)
+#define WRITE_LOG(level, tag) BOOST_LOG_TRIVIAL(level)<<tag;//severity_level::error, ""
+#endif
+#endif
+
+#ifndef INITIAL_LOG
+#ifdef LOG_ENABLE
+#define INITIAL_LOG(pathName, logMod, levelFilter) {LogTool::GetInstance()->Initial(pathName, logMod, levelFilter);}
+#else
+#define INITIAL_LOG(pathName, logMod, levelFilter) //"", LOG_FILE|LOG_FILE, severity_level::info
 #endif
 #endif
 
 #endif
+
+
 
 
 

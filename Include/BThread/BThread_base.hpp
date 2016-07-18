@@ -264,6 +264,9 @@ public:
 		}
 		else return false;
 	}
+public:
+	/// Mutex to avoid multi-thread conflicts.
+	shared_mutex m_section;
 
 //Thread functions:
 private:
@@ -273,8 +276,6 @@ private:
 	bool m_suspended = true;
 	/// Condition for suspend function.
 	condition_variable_any m_suspendCondition;
-	/// Mutex to avoid multi-thread conflicts.
-	shared_mutex m_section;
 	/// Thread Main function.
 	static void ThreadMain(void* thisObj)
 	{
@@ -330,7 +331,7 @@ private:
 				pThisObj->p_thread->sleep(boost::get_system_time() + posix_time::milliseconds(MAX(pThisObj->m_waitTime, 0)));
 			}
 			pThisObj->m_frameTime = pThisObj->m_taskTime + arWatch.elapsed() * 1000;
-			std::cout << "times:" << pThisObj->m_timesBack << ",taskTime: " << pThisObj->m_taskTime << ",frameTime: " << pThisObj->m_frameTime << std::endl;
+			//std::cout << "times:" << pThisObj->m_timesBack << ",taskTime: " << pThisObj->m_taskTime << ",frameTime: " << pThisObj->m_frameTime << std::endl;
 		}
 		pThisObj->m_ThStatus = BThread::TH_EXIT;
 	}
@@ -344,6 +345,7 @@ private:
 		}
 		//m_section.unlock();
 	}
+public:
 	/// Thread object.
 	thread* p_thread=0;
 };
